@@ -167,36 +167,36 @@ a{color:inherit}
 .book.live{animation:none}
 .sleeve.fx::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
   --px:calc(var(--mx)*100%);--py:calc(var(--my)*100%);
-  --glare:radial-gradient(circle at var(--px) var(--py),rgba(255,255,255,.55),rgba(255,255,255,.12) 28%,transparent 55%);
+  --glare:radial-gradient(circle at var(--px) var(--py),rgba(255,255,255,.22),rgba(255,255,255,.05) 30%,transparent 55%);
   --rb:linear-gradient(115deg,#ff5f6d,#ffc371 14%,#f9f871 28%,#7dff9a 42%,#6bd5ff 57%,#8f7bff 71%,#ff7be5 85%,#ff5f6d);
-  background-repeat:no-repeat;mix-blend-mode:color-dodge;opacity:.42;
+  background-repeat:no-repeat;mix-blend-mode:overlay;opacity:.3;
   background-image:var(--glare),var(--rb);background-size:100% 100%,320% 320%;background-position:0 0,var(--px) var(--py)}
-.sleeve.fx-retro::before{opacity:.6;filter:saturate(1.35)}
-.sleeve.fx-ftv::before{mix-blend-mode:hard-light;opacity:.5;
-  --glare:radial-gradient(ellipse 70% 45% at var(--px) var(--py),rgba(255,255,255,.95),rgba(255,255,255,.2) 45%,transparent 70%);
+.sleeve.fx-retro::before{opacity:.4;filter:saturate(1.3)}
+.sleeve.fx-ftv::before{mix-blend-mode:soft-light;opacity:.45;
+  --glare:radial-gradient(ellipse 70% 45% at var(--px) var(--py),rgba(255,255,255,.6),rgba(255,255,255,.12) 45%,transparent 70%);
   background-image:var(--glare),linear-gradient(115deg,rgba(255,180,200,.25),rgba(180,220,255,.25),rgba(200,255,210,.25));background-size:100% 100%,300% 300%}
-.sleeve.fx-etched::before{mix-blend-mode:overlay;opacity:.85;
+.sleeve.fx-etched::before{mix-blend-mode:overlay;opacity:.5;
   background-image:linear-gradient(100deg,transparent 32%,rgba(255,226,150,.75) 50%,transparent 68%),repeating-linear-gradient(92deg,rgba(255,240,200,.16) 0 1px,rgba(60,45,10,.14) 1px 2px,rgba(255,240,200,.05) 2px 3px);
   background-size:260% 100%,100% 100%;background-position:var(--px) 0,0 0;background-repeat:no-repeat,repeat}
-.sleeve.fx-gilded::before{mix-blend-mode:screen;opacity:.9;padding:5.5%;
+.sleeve.fx-gilded::before{mix-blend-mode:screen;opacity:.55;padding:5.5%;
   background-image:linear-gradient(110deg,#6b4a12,#ffe9a3 30%,#c9932b 45%,#fff3c4 55%,#8a5e17 75%,#ffe08a);background-size:260% 260%;background-position:var(--px) var(--py);
   -webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
-.sleeve.fx-surge::before{opacity:.48;
+.sleeve.fx-surge::before{opacity:.34;
   background-image:var(--glare),repeating-linear-gradient(122deg,transparent 0 5%,rgba(255,255,255,.5) 5% 5.8%,transparent 5.8% 9%,rgba(140,220,255,.4) 9% 10.4%,transparent 10.4% 13%,rgba(255,200,255,.35) 13% 13.6%),var(--rb);
   background-size:100% 100%,220% 220%,320% 320%;background-position:0 0,var(--px) var(--py),var(--px) var(--py)}
-.sleeve.fx-galaxy::before,.sleeve.fx-confetti::before{mix-blend-mode:screen;opacity:.95;background-repeat:repeat;
+.sleeve.fx-galaxy::before,.sleeve.fx-confetti::before{mix-blend-mode:screen;opacity:.55;background-repeat:repeat;
   background-image:radial-gradient(circle,#fff 0 1.1px,transparent 1.7px),radial-gradient(circle,#cfe8ff 0 .9px,transparent 1.5px),radial-gradient(circle,#ffe9c9 0 1.4px,transparent 2px),radial-gradient(circle,#fff 0 .7px,transparent 1.2px);
   background-size:23px 29px,37px 31px,53px 47px,13px 17px;background-position:3px 5px,11px 19px,29px 7px,7px 11px;
   -webkit-mask:radial-gradient(circle at var(--px) var(--py),#000 0,rgba(0,0,0,.75) 25%,rgba(0,0,0,.12) 60%);mask:radial-gradient(circle at var(--px) var(--py),#000 0,rgba(0,0,0,.75) 25%,rgba(0,0,0,.12) 60%)}
 .sleeve.fx-confetti::before{
   background-image:radial-gradient(circle,#ff6b9d 0 2px,transparent 2.6px),radial-gradient(circle,#6bd5ff 0 1.8px,transparent 2.4px),radial-gradient(circle,#ffe66b 0 2.2px,transparent 2.8px),radial-gradient(circle,#8dff9a 0 1.6px,transparent 2.2px);
   background-size:31px 37px,43px 29px,59px 53px,23px 41px}
-.sleeve.fx-textured::before{opacity:.38;
+.sleeve.fx-textured::before{opacity:.24;
   background-image:var(--glare),repeating-conic-gradient(from calc(var(--mx)*50deg) at 50% 38%,rgba(255,255,255,.55) 0 3deg,transparent 3deg 8deg),var(--rb);
   background-size:100% 100%,100% 100%,320% 320%;background-position:0 0,0 0,var(--px) var(--py)}
-.sleeve.fx-oilslick::before{mix-blend-mode:color-dodge;opacity:.7;
+.sleeve.fx-oilslick::before{mix-blend-mode:overlay;opacity:.45;
   background-image:var(--glare),linear-gradient(125deg,#2a0a4a,#0a5a6a 20%,#6a5a0a 40%,#0a6a3a 60%,#5a0a5a 80%,#0a2a6a);background-size:100% 100%,340% 340%;background-position:0 0,var(--px) var(--py)}
-.sleeve.fx-halo::before{opacity:.38;
+.sleeve.fx-halo::before{opacity:.24;
   background-image:repeating-radial-gradient(circle at var(--px) var(--py),rgba(255,255,255,.5) 0 2px,transparent 2px 9px),conic-gradient(from calc(var(--mx)*180deg) at var(--px) var(--py),#ff5f6d,#ffc371 14%,#f9f871 28%,#7dff9a 42%,#6bd5ff 57%,#8f7bff 71%,#ff7be5 85%,#ff5f6d);
   background-size:100% 100%,100% 100%;background-position:0 0,0 0}
 .book:not(.editing) .sleeve:not(.empty):hover{transform:translateY(-3px)}
