@@ -160,8 +160,45 @@ a{color:inherit}
 .sleeve img{width:100%;height:100%;display:block;border-radius:4.4%/3.2%;object-fit:cover;user-select:none;-webkit-user-drag:none;background:#1b1b1e}
 .sleeve::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
   background:linear-gradient(115deg,transparent 28%,rgba(255,255,255,.09) 42%,transparent 54%),linear-gradient(rgba(255,255,255,.12),transparent 3%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.sleeve.foil::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;mix-blend-mode:color-dodge;opacity:.33;
-  background:linear-gradient(125deg,#ff6b6b,#ffd56b 20%,#7dff9a 40%,#6bd5ff 60%,#c46bff 80%,#ff6b6b)}
+@property --mx{syntax:'<number>';inherits:true;initial-value:.3}
+@property --my{syntax:'<number>';inherits:true;initial-value:.25}
+@keyframes shimmer{from{--mx:.08;--my:.15}to{--mx:.92;--my:.85}}
+.book{animation:shimmer 5.5s ease-in-out infinite alternate}
+.book.live{animation:none}
+.sleeve.fx::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  --px:calc(var(--mx)*100%);--py:calc(var(--my)*100%);
+  --glare:radial-gradient(circle at var(--px) var(--py),rgba(255,255,255,.55),rgba(255,255,255,.12) 28%,transparent 55%);
+  --rb:linear-gradient(115deg,#ff5f6d,#ffc371 14%,#f9f871 28%,#7dff9a 42%,#6bd5ff 57%,#8f7bff 71%,#ff7be5 85%,#ff5f6d);
+  background-repeat:no-repeat;mix-blend-mode:color-dodge;opacity:.42;
+  background-image:var(--glare),var(--rb);background-size:100% 100%,320% 320%;background-position:0 0,var(--px) var(--py)}
+.sleeve.fx-retro::before{opacity:.6;filter:saturate(1.35)}
+.sleeve.fx-ftv::before{mix-blend-mode:hard-light;opacity:.5;
+  --glare:radial-gradient(ellipse 70% 45% at var(--px) var(--py),rgba(255,255,255,.95),rgba(255,255,255,.2) 45%,transparent 70%);
+  background-image:var(--glare),linear-gradient(115deg,rgba(255,180,200,.25),rgba(180,220,255,.25),rgba(200,255,210,.25));background-size:100% 100%,300% 300%}
+.sleeve.fx-etched::before{mix-blend-mode:overlay;opacity:.85;
+  background-image:linear-gradient(100deg,transparent 32%,rgba(255,226,150,.75) 50%,transparent 68%),repeating-linear-gradient(92deg,rgba(255,240,200,.16) 0 1px,rgba(60,45,10,.14) 1px 2px,rgba(255,240,200,.05) 2px 3px);
+  background-size:260% 100%,100% 100%;background-position:var(--px) 0,0 0;background-repeat:no-repeat,repeat}
+.sleeve.fx-gilded::before{mix-blend-mode:screen;opacity:.9;padding:5.5%;
+  background-image:linear-gradient(110deg,#6b4a12,#ffe9a3 30%,#c9932b 45%,#fff3c4 55%,#8a5e17 75%,#ffe08a);background-size:260% 260%;background-position:var(--px) var(--py);
+  -webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.sleeve.fx-surge::before{opacity:.48;
+  background-image:var(--glare),repeating-linear-gradient(122deg,transparent 0 5%,rgba(255,255,255,.5) 5% 5.8%,transparent 5.8% 9%,rgba(140,220,255,.4) 9% 10.4%,transparent 10.4% 13%,rgba(255,200,255,.35) 13% 13.6%),var(--rb);
+  background-size:100% 100%,220% 220%,320% 320%;background-position:0 0,var(--px) var(--py),var(--px) var(--py)}
+.sleeve.fx-galaxy::before,.sleeve.fx-confetti::before{mix-blend-mode:screen;opacity:.95;background-repeat:repeat;
+  background-image:radial-gradient(circle,#fff 0 1.1px,transparent 1.7px),radial-gradient(circle,#cfe8ff 0 .9px,transparent 1.5px),radial-gradient(circle,#ffe9c9 0 1.4px,transparent 2px),radial-gradient(circle,#fff 0 .7px,transparent 1.2px);
+  background-size:23px 29px,37px 31px,53px 47px,13px 17px;background-position:3px 5px,11px 19px,29px 7px,7px 11px;
+  -webkit-mask:radial-gradient(circle at var(--px) var(--py),#000 0,rgba(0,0,0,.75) 25%,rgba(0,0,0,.12) 60%);mask:radial-gradient(circle at var(--px) var(--py),#000 0,rgba(0,0,0,.75) 25%,rgba(0,0,0,.12) 60%)}
+.sleeve.fx-confetti::before{
+  background-image:radial-gradient(circle,#ff6b9d 0 2px,transparent 2.6px),radial-gradient(circle,#6bd5ff 0 1.8px,transparent 2.4px),radial-gradient(circle,#ffe66b 0 2.2px,transparent 2.8px),radial-gradient(circle,#8dff9a 0 1.6px,transparent 2.2px);
+  background-size:31px 37px,43px 29px,59px 53px,23px 41px}
+.sleeve.fx-textured::before{opacity:.38;
+  background-image:var(--glare),repeating-conic-gradient(from calc(var(--mx)*50deg) at 50% 38%,rgba(255,255,255,.55) 0 3deg,transparent 3deg 8deg),var(--rb);
+  background-size:100% 100%,100% 100%,320% 320%;background-position:0 0,0 0,var(--px) var(--py)}
+.sleeve.fx-oilslick::before{mix-blend-mode:color-dodge;opacity:.7;
+  background-image:var(--glare),linear-gradient(125deg,#2a0a4a,#0a5a6a 20%,#6a5a0a 40%,#0a6a3a 60%,#5a0a5a 80%,#0a2a6a);background-size:100% 100%,340% 340%;background-position:0 0,var(--px) var(--py)}
+.sleeve.fx-halo::before{opacity:.38;
+  background-image:repeating-radial-gradient(circle at var(--px) var(--py),rgba(255,255,255,.5) 0 2px,transparent 2px 9px),conic-gradient(from calc(var(--mx)*180deg) at var(--px) var(--py),#ff5f6d,#ffc371 14%,#f9f871 28%,#7dff9a 42%,#6bd5ff 57%,#8f7bff 71%,#ff7be5 85%,#ff5f6d);
+  background-size:100% 100%,100% 100%;background-position:0 0,0 0}
 .book:not(.editing) .sleeve:not(.empty):hover{transform:translateY(-3px)}
 .book.editing .sleeve:not(.empty){cursor:default;animation:jiggle .35s ease-in-out infinite alternate}
 .book.editing .pocket:nth-child(2n) .sleeve{animation-delay:-.17s}
@@ -477,6 +514,10 @@ function lineOf(e, qty){
 const listFromEntries = entries => entries.map(e => lineOf(e)).join('\n');
 
 /* ---------------- Scryfall ---------------- */
+function fxOf(c){ const p=c.promo_types||[], m={surgefoil:'surge',galaxyfoil:'galaxy',textured:'textured',gilded:'gilded',oilslick:'oilslick',halofoil:'halo',confettifoil:'confetti'};
+  for (const k in m) if (p.includes(k)) return m[k];
+  if (c.set_type==='from_the_vault') return 'ftv'; if (c.frame==='1997'||c.frame==='1993') return 'retro'; return ''; }
+const foilKind = e => !e.finish ? '' : e.finish==='E' ? 'etched' : (e.card && e.card.fx) || 'trad';
 function slim(c){
   const f0 = (c.card_faces && c.card_faces[0]) || {};
   const iu = c.image_uris || f0.image_uris || {};
@@ -484,7 +525,7 @@ function slim(c){
     img:iu.normal||iu.large||iu.small, imgL:iu.large||iu.normal, imgS:iu.small||iu.normal, art:iu.art_crop||null,
     eur:c.prices?.eur ?? null, eurF:c.prices?.eur_foil ?? null, cm:c.purchase_uris?.cardmarket || null,
     colors:c.colors || f0.colors || [], type:(c.type_line || f0.type_line || '').split(' // ')[0],
-    cmc:c.cmc ?? 0, rarity:c.rarity || '', released:c.released_at || '' };
+    cmc:c.cmc ?? 0, rarity:c.rarity || '', released:c.released_at || '', fx:fxOf(c) };
 }
 async function sfFetch(url, opts={}, tries=3){
   for (let i=0;i<tries;i++){
@@ -736,7 +777,7 @@ function pocketHTML(e){
   if (rem <= 0) return `<div class="pocket out" data-u="${e.uid}"><div class="sleeve empty"></div><div class="label"></div></div>`;
   const c = e.card, img = c ? (S.cur.format===4 ? c.imgL : c.img) : null;
   return `<div class="pocket" data-u="${e.uid}">
-    <div class="sleeve${e.finish?' foil':''}" data-act="toggle" data-u="${e.uid}" title="${esc(e.name)}">
+    <div class="sleeve${e.finish?' fx fx-'+foilKind(e):''}" data-act="toggle" data-u="${e.uid}" title="${esc(e.name)}">
       ${img ? `<img src="${esc(img)}" alt="${esc(e.name)}" decoding="async" draggable="false">` : `<div class="missing">${esc(e.name)}<small>introuvable sur Scryfall</small></div>`}
       ${rem>1 ? `<span class="qty">×${rem}</span>` : ''}
     </div>
@@ -1065,6 +1106,10 @@ function variantTags(c){
   if (pt.includes('galaxyfoil')) t.push('Galaxy foil');
   if (pt.includes('surgefoil')) t.push('Surge foil');
   if (pt.includes('halofoil')) t.push('Halo foil');
+  if (pt.includes('gilded')) t.push('Gilded foil');
+  if (pt.includes('oilslick')) t.push('Oil slick');
+  if (pt.includes('confettifoil')) t.push('Confetti foil');
+  if (c.set_type==='from_the_vault') t.push('From the Vault');
   if (pt.includes('stepandcompleat')) t.push('Step-and-compleat');
   if (pt.includes('prerelease')) t.push('Avant-première'); else if (c.promo) t.push('Promo');
   if (c.border_color === 'gold') t.push('Bord doré');
@@ -1212,7 +1257,7 @@ async function refreshStale(){
   if (S.refreshingAll) return; S.refreshingAll = true;
   let changed = false;
   for (const b of S.lib.binders){
-    const stale = b.entries.length && (!b.fetchedAt || Date.now()-b.fetchedAt > 12*3600e3 || b.entries.some(e => e.card && e.card.type === undefined));
+    const stale = b.entries.length && (!b.fetchedAt || Date.now()-b.fetchedAt > 12*3600e3 || b.entries.some(e => e.card && (e.card.type === undefined || e.card.fx === undefined)));
     if (!stale) continue;
     if (await refreshBinder(b, true)) changed = true;
   }
@@ -1454,6 +1499,14 @@ app.addEventListener('pointerup', ev => {
   if (sx==null) return; const dx=ev.clientX-sx, dy=ev.clientY-sy; sx=null;
   if (Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.3){ swiped=true; turn(dx<0?1:-1); setTimeout(()=>swiped=false, 350); }
 });
+let liveT;
+function setLight(x, y){ const book = document.querySelector('.book'); if (!book) return;
+  book.classList.add('live'); book.style.setProperty('--mx', Math.min(1,Math.max(0,x)).toFixed(3)); book.style.setProperty('--my', Math.min(1,Math.max(0,y)).toFixed(3));
+  clearTimeout(liveT); liveT = setTimeout(() => book.classList.remove('live'), 2500); }
+app.addEventListener('pointermove', ev => { if (ev.pointerType === 'touch') return; const st = ev.target.closest('.stage'); if (!st) return;
+  const r = st.getBoundingClientRect(); setLight((ev.clientX-r.left)/r.width, (ev.clientY-r.top)/r.height); });
+window.addEventListener('deviceorientation', ev => { if (ev.gamma == null || S.view !== 'binder') return;
+  setLight(.5 + ev.gamma/50, .5 + (ev.beta-45)/60); });
 let rz;
 window.addEventListener('resize', () => { clearTimeout(rz); rz=setTimeout(() => {
   if (S.view !== 'binder' || S.busy) return;
