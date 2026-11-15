@@ -365,6 +365,19 @@ a.price:hover{filter:brightness(1.25)}
 .cov-prev .info b{color:var(--ink);display:block;font-size:14px}
 .cov-prev .ghost{margin-top:8px;font-size:12.5px;padding:4px 11px}
 .cov-qa{flex:1 1 auto;max-width:none}
+.dropzone{position:relative}
+.dropzone.over textarea{border-color:var(--accent);background:#1d1810}
+.dropzone.over::after{content:"Dépose tes fichiers .txt ici";position:absolute;inset:26px 0 0;display:flex;align-items:center;justify-content:center;border:2px dashed var(--accent);border-radius:10px;
+  background:rgba(20,16,10,.85);color:var(--accent);font-weight:600;font-size:15px;pointer-events:none}
+.file-row{display:flex;align-items:center;gap:10px;margin:-6px 0 14px;flex-wrap:wrap}
+.file-row .ghost{font-size:12.5px;padding:5px 12px}
+.file-row span{font-size:12.5px;color:var(--faint)}
+.file-row input{display:none}
+.modal .file-row label{display:inline-flex;flex-direction:row;margin:0;font-size:12.5px;color:var(--ink)}
+.drop-veil{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center;background:rgba(8,7,5,.72);backdrop-filter:blur(2px);pointer-events:none}
+.drop-veil.on{display:flex}
+.drop-veil div{border:2px dashed var(--accent);border-radius:18px;padding:40px 56px;text-align:center;color:var(--accent);font:700 24px Fraunces,serif;background:rgba(28,25,20,.9)}
+.drop-veil small{display:block;margin-top:8px;font:400 14px Inter,sans-serif;color:var(--muted)}
 .help{font-size:12.5px;color:var(--faint);margin:-6px 0 18px;line-height:1.55}
 .help code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px;color:var(--muted)}
 .m-btns{display:flex;justify-content:flex-end;gap:8px;align-items:center}
@@ -407,7 +420,7 @@ a.price:hover{filter:brightness(1.25)}
 .loading{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(10,9,7,.85)}
 .loading .bar{width:260px}
 .loading p{color:var(--muted);margin:0;font-size:14px}
-.toast{position:fixed;left:50%;bottom:calc(var(--badge) + 10px);transform:translate(-50%,20px);opacity:0;z-index:58;background:#2a251c;border:1px solid var(--line);display:flex;align-items:center;gap:12px;
+.toast{position:fixed;left:50%;bottom:calc(var(--badge) + 10px);transform:translate(-50%,20px);opacity:0;z-index:75;background:#2a251c;border:1px solid var(--line);display:flex;align-items:center;gap:12px;
   padding:10px 16px;border-radius:10px;font-size:14px;max-width:min(560px,92vw);transition:all .25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.show.actionable{pointer-events:auto}
@@ -1343,13 +1356,28 @@ function coverForm(b){
 function importForm(b){
   const m = showModal(`<form class="modal" autocomplete="off">
     <h2>Liste de « ${esc(b.name)} »</h2>
-    <label>Format Moxfield<textarea name="list" spellcheck="false" placeholder="1 Sol Ring (C21) 263&#10;1 Arcane Signet (ELD) 331 *F*&#10;4 Lightning Bolt">${esc(listFromEntries(b.entries))}</textarea></label>
-    <p class="help">Colle ici une liste (sur Moxfield : <b>Export</b>, puis copier au format Moxfield). Elle remplace le contenu du classeur. L'édition <code>(C21)</code> et le numéro <code>263</code> donnent la version exacte, <code>*F*</code> marque une foil.</p>
+    <label class="dropzone">Format Moxfield<textarea name="list" spellcheck="false" placeholder="1 Sol Ring (C21) 263&#10;1 Arcane Signet (ELD) 331 *F*&#10;4 Lightning Bolt">${esc(listFromEntries(b.entries))}</textarea></label>
+    <div class="file-row"><label class="ghost" style="cursor:pointer">Choisir des fichiers .txt<input type="file" accept=".txt,.dek,text/plain" multiple></label><button type="button" class="ghost" data-clear>Vider la liste</button><span>ou glisse-les sur la liste</span></div>
+    <p class="help">Colle une liste ou dépose un ou plusieurs fichiers .txt (sur Moxfield : <b>Export</b>, au format Moxfield). Les fichiers s'ajoutent à la liste affichée ; vide-la d'abord pour repartir de zéro. À l'enregistrement, la liste remplace le contenu du classeur. L'édition <code>(C21)</code> et le numéro <code>263</code> donnent la version exacte, <code>*F*</code> marque une foil.</p>
     <div class="m-err" hidden></div>
     <div class="progress" hidden><div class="bar"><i></i></div><span></span></div>
     <div class="m-btns"><button type="button" class="ghost" data-act="close-modal">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
   </form>`);
   const form = m.querySelector('form'), err = m.querySelector('.m-err'), prog = m.querySelector('.progress');
+  const zone = m.querySelector('.dropzone');
+  const addFiles = async files => {
+    const r = await readTextFiles(files); if (!r.text) return;
+    const cur = form.list.value.replace(/\s+$/,'');
+    form.list.value = (cur ? cur + '\n' : '') + r.text;
+    form.list.scrollTop = form.list.scrollHeight;
+    toast(`${r.n} fichier${r.n>1?'s':''} ajouté${r.n>1?'s':''} à la liste (${parseList(r.text).length} lignes).`);
+  };
+  zone.addEventListener('dragover', ev => { if (hasFiles(ev)){ ev.preventDefault(); ev.stopPropagation(); zone.classList.add('over'); } });
+  zone.addEventListener('dragleave', ev => { if (!zone.contains(ev.relatedTarget)) zone.classList.remove('over'); });
+  zone.addEventListener('drop', ev => { if (!hasFiles(ev)) return; ev.preventDefault(); ev.stopPropagation(); zone.classList.remove('over'); hideVeil(); addFiles(ev.dataTransfer.files); });
+  m.querySelector('.file-row input').addEventListener('change', ev => { addFiles(ev.target.files); ev.target.value=''; });
+  m.querySelector('[data-clear]').addEventListener('click', () => { form.list.value=''; form.list.focus(); });
+  if (pendingDrop){ const t = pendingDrop; pendingDrop = null; const cur = form.list.value.replace(/\s+$/,''); form.list.value = (cur ? cur+'\n' : '') + t; }
   form.list.focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault(); err.hidden = true;
@@ -1514,6 +1542,33 @@ window.addEventListener('resize', () => { clearTimeout(rz); rz=setTimeout(() => 
   if (wasSolo && !S.solo) S.s = Math.floor((S.p+1)/2);
   if (!wasSolo && S.solo) S.p = S.s===0 ? -1 : 2*S.s-1;
   paint(); }, 150); });
+
+/* ---------------- Glisser-déposer de fichiers ---------------- */
+let pendingDrop = null;
+const hasFiles = ev => [...(ev.dataTransfer?.types || [])].includes('Files');
+async function readTextFiles(fileList){
+  const files = [...fileList], ok = files.filter(f => /\.(txt|dek)$/i.test(f.name) || f.type === 'text/plain');
+  if (ok.length < files.length) toast(`${files.length-ok.length} fichier${files.length-ok.length>1?'s':''} ignoré${files.length-ok.length>1?'s':''} : seuls les .txt sont acceptés.`, 4500);
+  const texts = await Promise.all(ok.map(f => f.text()));
+  return {n: ok.length, text: texts.map(t => t.replace(/\r\n?/g,'\n').trim()).filter(Boolean).join('\n'), names: ok.map(f => f.name.replace(/\.[^.]+$/,''))};
+}
+const veil = document.createElement('div'); veil.className = 'drop-veil';
+veil.innerHTML = '<div>Dépose tes listes .txt<small></small></div>'; document.body.appendChild(veil);
+let veilT; const hideVeil = () => veil.classList.remove('on');
+document.addEventListener('dragover', ev => {
+  if (!hasFiles(ev)) return; ev.preventDefault();
+  if (modalEl) return;
+  veil.querySelector('small').textContent = S.view === 'binder' && S.cur && !S.shared ? `Elles s'ajouteront à « ${S.cur.name} »` : 'Un nouveau classeur sera créé';
+  veil.classList.add('on'); clearTimeout(veilT); veilT = setTimeout(hideVeil, 300);
+});
+document.addEventListener('drop', async ev => {
+  if (!hasFiles(ev)) return; ev.preventDefault(); hideVeil();
+  if (modalEl) return;
+  const r = await readTextFiles(ev.dataTransfer.files); if (!r.text) return;
+  let b = S.view === 'binder' && S.cur && !S.shared ? S.cur : null;
+  if (!b){ b = newBinder(); if (r.names.length === 1) b.name = r.names[0].slice(0,60); saveLib(); await switchTo(b); }
+  pendingDrop = r.text; importForm(b);
+});
 
 /* ---------------- Démarrage ---------------- */
 function start(){
