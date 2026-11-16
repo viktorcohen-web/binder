@@ -181,9 +181,12 @@ a{color:inherit}
 .sleeve.fx-gilded::before{mix-blend-mode:screen;opacity:.55;padding:5.5%;
   background-image:linear-gradient(110deg,#6b4a12,#ffe9a3 30%,#c9932b 45%,#fff3c4 55%,#8a5e17 75%,#ffe08a);background-size:260% 260%;background-position:var(--px) var(--py);
   -webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
-.sleeve.fx-surge::before{opacity:.34;
-  background-image:var(--glare),repeating-linear-gradient(122deg,transparent 0 5%,rgba(255,255,255,.5) 5% 5.8%,transparent 5.8% 9%,rgba(140,220,255,.4) 9% 10.4%,transparent 10.4% 13%,rgba(255,200,255,.35) 13% 13.6%),var(--rb);
-  background-size:100% 100%,220% 220%,320% 320%;background-position:0 0,var(--px) var(--py),var(--px) var(--py)}
+.sleeve.fx-surge::before{opacity:1;mix-blend-mode:screen;
+  background-image:repeating-linear-gradient(118deg,transparent 0 5px,rgba(255,255,255,.55) 5px 6px,transparent 6px 10px,rgba(120,210,255,.5) 10px 11.5px,transparent 11.5px 15px,rgba(255,160,240,.45) 15px 16px,transparent 16px 22px),
+    linear-gradient(118deg,transparent 20%,rgba(120,200,255,.18) 40%,rgba(255,170,240,.18) 60%,transparent 80%);
+  background-size:100% 100%,250% 100%;background-repeat:repeat,no-repeat;background-position:calc(var(--mx)*44px) 0,var(--px) 0;
+  -webkit-mask-image:linear-gradient(118deg,rgba(0,0,0,.15),#000 50%,rgba(0,0,0,.15));-webkit-mask-size:250% 100%;-webkit-mask-repeat:no-repeat;-webkit-mask-position:var(--px) 0;
+  mask-image:linear-gradient(118deg,rgba(0,0,0,.15),#000 50%,rgba(0,0,0,.15));mask-size:250% 100%;mask-repeat:no-repeat;mask-position:var(--px) 0}
 .sleeve.fx-galaxy::before,.sleeve.fx-confetti::before{mix-blend-mode:screen;opacity:.55;background-repeat:repeat;
   background-image:radial-gradient(circle,#fff 0 1.1px,transparent 1.7px),radial-gradient(circle,#cfe8ff 0 .9px,transparent 1.5px),radial-gradient(circle,#ffe9c9 0 1.4px,transparent 2px),radial-gradient(circle,#fff 0 .7px,transparent 1.2px);
   background-size:23px 29px,37px 31px,53px 47px,13px 17px;background-position:3px 5px,11px 19px,29px 7px,7px 11px;
