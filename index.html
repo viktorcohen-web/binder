@@ -223,6 +223,14 @@ a{color:inherit}
 .sleeve.fx-oilslick .gl,.sleeve.fx-galaxy .gl,.sleeve.fx-confetti .gl{opacity:calc(.15*var(--li))}
 .sleeve.fx-halo .sh{filter:none;opacity:calc(.15 + .5*var(--li));
   background-image:var(--rb),repeating-radial-gradient(circle at -40% 15%,#000 0 2.4%,#fff 3.4%,#000 4.4% 7%);background-blend-mode:multiply,normal;background-size:300% 300%,100% 100%;background-position:var(--X) var(--Y),0 0}
+.sleeve.fx-kld .sh{mix-blend-mode:color-dodge;opacity:calc(.35 + .55*var(--li));
+  background-image:repeating-linear-gradient(105deg,#7a2a3a 0%,#7a6420 5%,#3f7a26 10%,#1d6e7a 15%,#2c3a86 20%,#6e2a7a 25%,#7a2a3a 30%);
+  background-size:280% 280%;background-position:var(--X) var(--Y);
+  --lit:radial-gradient(150% 120% at var(--X) var(--Y),#000 0,rgba(0,0,0,.8) 35%,rgba(0,0,0,.35) 75%,rgba(0,0,0,.15) 100%)}
+.sleeve.fx-kld .gl{mix-blend-mode:overlay;opacity:calc(.2 + .45*var(--li));
+  background:radial-gradient(70% 45% at var(--X) var(--Y),rgba(255,236,200,.85),rgba(255,170,110,.25) 45%,transparent 75%),
+    repeating-linear-gradient(60deg,rgba(255,255,255,.18) 0 1.2%,transparent 1.2% 3.4%);
+  -webkit-mask-image:none;mask-image:none}
 .book:not(.editing) .sleeve:not(.empty):hover{transform:translateY(-3px)}
 .book.editing .sleeve:not(.empty){cursor:default;animation:jiggle .35s ease-in-out infinite alternate}
 .book.editing .pocket:nth-child(2n) .sleeve{animation-delay:-.17s}
@@ -554,7 +562,7 @@ const listFromEntries = entries => entries.map(e => lineOf(e)).join('\n');
 function fxOf(c){ const p=c.promo_types||[], m={surgefoil:'surge',galaxyfoil:'galaxy',textured:'textured',gilded:'gilded',oilslick:'oilslick',halofoil:'halo',confettifoil:'confetti'};
   for (const k in m) if (p.includes(k)) return m[k];
   if (c.set_type==='from_the_vault') return 'ftv'; if (c.frame==='1997'||c.frame==='1993') return 'retro'; return ''; }
-const foilKind = e => !e.finish ? '' : e.finish==='E' ? 'etched' : (e.card && e.card.fx) || 'trad';
+const foilKind = e => !e.finish ? '' : e.finish==='E' ? 'etched' : (e.card && e.card.set==='mps') ? 'kld' : (e.card && e.card.fx) || 'trad';
 function slim(c){
   const f0 = (c.card_faces && c.card_faces[0]) || {};
   const iu = c.image_uris || f0.image_uris || {};
@@ -1147,6 +1155,7 @@ function variantTags(c){
   if (pt.includes('oilslick')) t.push('Oil slick');
   if (pt.includes('confettifoil')) t.push('Confetti foil');
   if (c.set_type==='from_the_vault') t.push('From the Vault');
+  if (c.set==='mps') t.push('Kaladesh Invention');
   if (pt.includes('stepandcompleat')) t.push('Step-and-compleat');
   if (pt.includes('prerelease')) t.push('Avant-première'); else if (c.promo) t.push('Promo');
   if (c.border_color === 'gold') t.push('Bord doré');
