@@ -510,6 +510,7 @@ function loadLib(){
   return lib;
 }
 function migrate(b){
+  delete b._refreshing;
   b.entries = b.entries || []; b.entries.forEach(e => { e.uid = e.uid || uid(); });
   if (!b.aside || Array.isArray(b.aside)) b.aside = {};
   b.tags = b.tags || []; b.format = b.format === 4 ? 4 : 9;
@@ -1498,8 +1499,9 @@ function startTagAdd(btn){
 }
 
 /* ---------------- Rafraîchissement des prix ---------------- */
+const REFRESHING = new Set();
 async function refreshBinder(b, quiet){
-  if (b._refreshing) return false; b._refreshing = true;
+  if (REFRESHING.has(b.id)) return false; REFRESHING.add(b.id);
   try {
     const base = b.entries.map(e => e.card ? {...e, set:e.card.set, cn:e.card.cn} : e);
     const {entries} = await resolveEntries(base);
@@ -1510,7 +1512,7 @@ async function refreshBinder(b, quiet){
     if (!quiet) renderSide();
     return true;
   } catch(e){ return false; }
-  finally { delete b._refreshing; }
+  finally { REFRESHING.delete(b.id); }
 }
 
 async function openShared(code){
