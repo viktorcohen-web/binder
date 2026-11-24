@@ -613,7 +613,7 @@ async function sfFetch(url, opts={}, tries=3){
   for (let i=0;i<tries;i++){
     let r;
     try { r = await fetch(url, {...opts, headers:{'Accept':'application/json', ...(opts.headers||{})}}); }
-    catch(err){ throw new Error(BLOCKED); }
+    catch(err){ if (i < tries-1){ await sleep(1500*(i+1)); continue; } throw new Error(BLOCKED); }
     if (r.status === 429){ await sleep(1000*(i+1)); continue; }
     return r;
   }
@@ -667,7 +667,7 @@ const RATE = (() => { try { const r = JSON.parse(localStorage.getItem('mtg-usd-e
 async function loadRate(){
   if (RATE.fetched && Date.now() - RATE.fetched < 24*3600e3) return;
   try {
-    const d = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR').then(r => r.json());
+    const d = await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR').then(r => r.json());
     if (d && d.rates && d.rates.EUR){ Object.assign(RATE, {v:d.rates.EUR, date:d.date, fetched:Date.now()});
       try { localStorage.setItem('mtg-usd-eur', JSON.stringify(RATE)); } catch(e){}
       if (S.view === 'binder' && !S.busy) paint(); else if (S.view === 'synth') renderSynth(); }
