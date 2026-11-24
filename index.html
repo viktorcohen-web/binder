@@ -503,8 +503,10 @@ const isMobile = () => window.innerWidth <= 900;
 
 const S = { lib: loadLib(), view:null, cur:null, shared:false, list:[], s:0, p:-1, busy:false, solo:false, tag:null, refreshing:false, editing:false };
 
-function loadLib(){
-  let lib; try { lib = JSON.parse(localStorage.getItem(STORE)) || {binders:[]}; } catch(e){ lib = {binders:[]}; }
+function loadLib(raw){
+  if (raw === undefined){ try { raw = localStorage.getItem(STORE); } catch(e){ raw = null; } }
+  let lib; try { lib = JSON.parse(raw) || {binders:[]}; } catch(e){ lib = {binders:[]}; }
+  lib.binders = lib.binders || [];
   lib.ui = lib.ui || {sideWide:false, asideDir:'desc'};
   for (const b of lib.binders) migrate(b);
   return lib;
@@ -518,7 +520,36 @@ function migrate(b){
   if (b.list == null) b.list = listFromEntries(b.entries);
   return b;
 }
-function saveLib(){ try { localStorage.setItem(STORE, JSON.stringify(S.lib)); } catch(e){ toast("Impossible d'enregistrer dans ce navigateur (stockage indisponible ou plein)."); } }
+/* Stockage : IndexedDB (grand espace, local au navigateur) ; localStorage en secours */
+const IDB = {db:null};
+function idbOpen(){ return new Promise((res, rej) => { const r = indexedDB.open('mtg-binders', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+function idbGet(k){ return new Promise((res, rej) => { const q = IDB.db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+function idbPut(k, v){ return new Promise((res, rej) => { const tx = IDB.db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k);
+  tx.oncomplete = () => res(); tx.onerror = tx.onabort = () => rej(tx.error); }); }
+async function initStore(){
+  try { IDB.db = await idbOpen(); } catch(e){ IDB.db = null; return; }
+  try {
+    const raw = await idbGet('lib');
+    if (raw){ S.lib = loadLib(raw); return; }
+    let ls = null; try { ls = localStorage.getItem(STORE); } catch(e){}
+    if (ls){
+      await idbPut('lib', ls);
+      if ((await idbGet('lib')) === ls){ try { localStorage.removeItem(STORE); } catch(e){} }
+    }
+  } catch(e){ IDB.db = null; }
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch(e){}
+}
+let saveT = null;
+function saveLib(){ clearTimeout(saveT); saveT = setTimeout(flushLib, 250); }
+async function flushLib(){
+  clearTimeout(saveT); saveT = null;
+  const str = JSON.stringify(S.lib);
+  if (IDB.db){ try { await idbPut('lib', str); return; } catch(e){} }
+  try { localStorage.setItem(STORE, str); } catch(e){ toast("Impossible d'enregistrer dans ce navigateur (stockage indisponible ou plein)."); }
+}
+window.addEventListener('pagehide', () => { if (saveT) flushLib(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && saveT) flushLib(); });
 const persistCur = () => { if (!S.shared) saveLib(); };
 const coverAttr = b => `style="--c:${esc(b.color)};${b.cover?`--art:url('${esc(b.cover.art)}')`:''}"`;
 const coverCls = b => 'cov' + (b.cover ? ' art' : '');
@@ -1659,9 +1690,12 @@ function start(){
   if (S.lib.binders.some(b => b.entries.length)) renderSynth();
   else openBinder(S.lib.binders[0] || newBinder());
 }
-loadRate();
-const h = location.hash.match(/^#b=(.+)$/);
-if (h){ shell(); renderSide(); openShared(h[1]); } else start();
+(async () => {
+  await initStore();
+  loadRate();
+  const h = location.hash.match(/^#b=(.+)$/);
+  if (h){ shell(); renderSide(); openShared(h[1]); } else start();
+})();
 })();
 </script>
 </body>
