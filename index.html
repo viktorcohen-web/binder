@@ -70,7 +70,16 @@ a{color:inherit}
 .bopts button{background:transparent;border:0;color:var(--faint);font-size:11.5px;padding:3px 6px;border-radius:6px}
 .bopts button:hover{color:var(--ink);background:rgba(255,255,255,.06)}
 .bopts button.red:hover{color:#ff8f7d}
-.newb{margin:6px 14px 14px}
+.newb{margin:6px 14px 4px}
+.sbtn.sync{margin:2px 14px 14px}
+.sbtn.sync .ic{position:relative}
+.sbtn.sync .dot{position:absolute;right:4px;bottom:4px;width:8px;height:8px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 2px #17150f}
+.sbtn.sync.st-ok .dot{background:#5fd38a}
+.sbtn.sync.st-syncing .dot,.sbtn.sync.st-loading .dot{background:var(--accent);animation:blink 1s infinite alternate}
+.sbtn.sync.st-error .dot{background:var(--red)}
+.sbtn.sync.st-off .ic{border-color:rgba(232,183,90,.45);color:var(--accent)}
+.sbtn.sync .lbl{font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+@keyframes blink{to{opacity:.35}}
 .side-backdrop{display:none}
 .menu-btn{display:none}
 @media (max-width:900px){
@@ -544,6 +553,7 @@ let saveT = null;
 function saveLib(){ clearTimeout(saveT); saveT = setTimeout(flushLib, 250); }
 async function flushLib(){
   clearTimeout(saveT); saveT = null;
+  try { stampAndPush(); } catch(e){ console.warn('sync', e); }
   const str = JSON.stringify(S.lib);
   if (IDB.db){ try { await idbPut('lib', str); return; } catch(e){} }
   try { localStorage.setItem(STORE, str); } catch(e){ toast("Impossible d'enregistrer dans ce navigateur (stockage indisponible ou plein)."); }
@@ -774,7 +784,8 @@ function renderSide(){
         </button>
         <div class="bopts"><button data-act="cover" data-id="${b.id}">Couverture</button><button data-act="import" data-id="${b.id}">Importer</button><button data-act="export" data-id="${b.id}">Exporter</button><button class="red" data-act="del" data-id="${b.id}">Supprimer</button></div>
       </div>`; }).join('')}</nav>
-    <button class="sbtn newb" data-act="new" title="Nouveau classeur"><span class="ic" style="font-size:20px">+</span><span class="lbl">Nouveau classeur</span></button>`;
+    <button class="sbtn newb" data-act="new" title="Nouveau classeur"><span class="ic" style="font-size:20px">+</span><span class="lbl">Nouveau classeur</span></button>
+    ${syncButton()}`;
 }
 
 /* ---------------- Vue classeur ---------------- */
@@ -1564,6 +1575,8 @@ document.addEventListener('click', ev => {
   const act = t.dataset.act, b = t.dataset.id ? findBinder(t.dataset.id) : null;
   switch(act){
     case 'close-modal': closeModal(); break;
+    case 'sync': syncDialog(); break;
+    case 'sync-out': closeModal(); SYNC.cloud && SYNC.cloud.signOut(); break;
     case 'new': { closeModal(); S.tag = null; switchTo(newBinder()); break; }
     case 'open': if (b) switchTo(b); break;
     case 'synth': if (!S.busy) renderSynth(); break;
@@ -1684,6 +1697,175 @@ document.addEventListener('drop', async ev => {
   pendingDrop = r.text; importForm(b);
 });
 
+/* ---------------- Synchronisation entre appareils (Firebase) ---------------- */
+const FB_CONFIG = {
+  apiKey: "AIzaSyCQsL6Glkrrvxw_86VT_Hm2XrfPBplWnFw",
+  authDomain: "binder-c3ec5.firebaseapp.com",
+  projectId: "binder-c3ec5",
+  storageBucket: "binder-c3ec5.firebasestorage.app",
+  messagingSenderId: "623548722221",
+  appId: "1:623548722221:web:087afed019b30f432e1ca4"
+};
+const FBV = '10.12.2';
+const SYNC = {cloud:null, user:null, state:'loading', unsub:null, err:''};
+function hashStr(str){ let h = 0x811c9dc5; for (let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h>>>0).toString(36) + ':' + str.length; }
+const syncFields = b => ({
+  name: b.name || 'Classeur', color: b.color || '#232326', cover: b.cover || null, format: b.format === 4 ? 4 : 9, sort: b.sort || 'color', tags: b.tags || [],
+  entries: b.entries.map(e => ({u:e.uid, q:e.qty, n:e.name, s:String((e.card ? e.card.set : e.set) || ''), c:String((e.card ? e.card.cn : e.cn) || ''), f:e.finish || ''})),
+  aside: b.aside || {}
+});
+const hashOf = b => hashStr(JSON.stringify(syncFields(b)));
+const syncMeta = () => (S.lib.sync = S.lib.sync || {uid:null, h:{}});
+const remoteHash = d => hashStr(JSON.stringify(syncFields({...d, entries:(d.entries||[]).map(x => ({uid:x.u, qty:x.q, name:x.n, set:x.s, cn:x.c, finish:x.f}))})));
+const isPristine = b => !b.entries.length && b.name === 'Nouveau classeur' && !b.cover && !(b.tags||[]).length;
+
+/* À chaque enregistrement : date de modification locale, puis envoi de ce qui a changé */
+function stampAndPush(){
+  for (const b of S.lib.binders){
+    const h = hashOf(b);
+    if (b.h !== h){ if (b.h !== undefined || !b.updatedAt) b.updatedAt = Date.now(); b.h = h; }
+  }
+  if (!SYNC.user || !SYNC.cloud || SYNC.state === 'syncing') return;
+  const meta = syncMeta(), uid = SYNC.user.uid;
+  for (const b of S.lib.binders){
+    if (meta.h[b.id] === b.h) continue;
+    if (isPristine(b) && !(b.id in meta.h)) continue;
+    const data = {...syncFields(b), updatedAt: b.updatedAt || Date.now(), deleted: false};
+    if (JSON.stringify(data).length > 950000){ setSyncState('error', `« ${b.name} » est trop gros pour être synchronisé`); continue; }
+    meta.h[b.id] = b.h;
+    SYNC.cloud.put(uid, b.id, data).catch(e => setSyncState('error', e.message || String(e)));
+  }
+  for (const id of Object.keys(meta.h)){
+    if (S.lib.binders.some(b => b.id === id)) continue;
+    delete meta.h[id];
+    SYNC.cloud.put(uid, id, {deleted: true, updatedAt: Date.now()}).catch(e => setSyncState('error', e.message || String(e)));
+  }
+}
+function fromRemote(id, d, local){
+  const old = new Map((local ? local.entries : []).map(e => [e.uid, e]));
+  const entries = (d.entries || []).map(x => { const o = old.get(x.u);
+    const keep = o && o.card && o.card.set === x.s && String(o.card.cn) === x.c;
+    return {uid:x.u, qty:x.q, name:x.n, set:x.s, cn:x.c, finish:x.f || '', card: keep ? o.card : null}; });
+  const b = local || {id, created: Date.now()};
+  Object.assign(b, {name:d.name, color:d.color, cover:d.cover || null, format:d.format === 4 ? 4 : 9, sort:d.sort || 'color', tags:d.tags || [], aside:d.aside || {}, entries, v3:1, updatedAt:d.updatedAt || 0});
+  b.list = listFromEntries(b.entries);
+  if (!local) S.lib.binders.push(migrate(b));
+  b.h = hashOf(b); syncMeta().h[id] = b.h;
+  if (entries.some(e => !e.card)) resolveMissing(b);
+  return b;
+}
+async function resolveMissing(b){
+  const miss = b.entries.filter(e => !e.card); if (!miss.length) return;
+  try {
+    const {entries} = await resolveEntries(miss);
+    const m = new Map(entries.map(e => [e.uid, e.card]));
+    b.entries.forEach(e => { if (!e.card && m.get(e.uid)) e.card = m.get(e.uid); });
+    if (!b.fetchedAt) b.fetchedAt = Date.now();
+    saveLib(); refreshViews([b.id], []);
+  } catch(e){}
+}
+function removeLocal(id){ S.lib.binders = S.lib.binders.filter(b => b.id !== id); delete syncMeta().h[id]; }
+function refreshViews(changed, removed){
+  renderSide();
+  if (S.view === 'synth'){ renderSynth(); return; }
+  if (S.view !== 'binder' || !S.cur || S.shared) return;
+  if (removed.includes(S.cur.id)){ openBinder(S.lib.binders[0] || newBinder()); return; }
+  if (!changed.includes(S.cur.id)) return;
+  const n = app.querySelector('.tb-title .n'); if (n) n.textContent = S.cur.name;
+  const z = app.querySelector('.tb-tags'); if (z) z.innerHTML = tagChips(S.cur);
+  app.querySelectorAll('.sb').forEach(x => x.classList.toggle('on', x.dataset.s === S.cur.sort));
+  computeView(); if (S.busy) S.pendingPaint = true; else { layout(); paint(); } updateAsideUI();
+}
+function initialMerge(docs){
+  const meta = syncMeta(), uid = SYNC.user.uid;
+  if (meta.uid !== uid){ meta.uid = uid; meta.h = {}; }
+  const live = docs.filter(x => !x.data.deleted);
+  const changed = [], removed = [];
+  if (live.length) S.lib.binders.filter(isPristine).forEach(b => { if (!docs.some(x => x.id === b.id)){ removeLocal(b.id); removed.push(b.id); } });
+  for (const {id, data} of docs){
+    const local = S.lib.binders.find(b => b.id === id);
+    if (data.deleted){
+      if (local && (local.updatedAt || 0) <= (data.updatedAt || 0)){ removeLocal(id); removed.push(id); }
+      else if (!local) delete meta.h[id];
+      continue;
+    }
+    if (!local){ fromRemote(id, data); changed.push(id); continue; }
+    const rh = remoteHash(data);
+    if (rh === hashOf(local)){ meta.h[id] = local.h = rh; continue; }
+    if ((data.updatedAt || 0) > (local.updatedAt || 0)){ fromRemote(id, data, local); changed.push(id); }
+    else meta.h[id] = '';
+  }
+  for (const b of S.lib.binders) if (!docs.some(x => x.id === b.id) && !(b.id in meta.h) && !isPristine(b)) meta.h[b.id] = '';
+  return {changed, removed};
+}
+function applyRemote(docs){
+  const changed = [], removed = [];
+  for (const {id, data} of docs){
+    const local = S.lib.binders.find(b => b.id === id);
+    if (data.deleted){ if (local && (local.updatedAt || 0) <= (data.updatedAt || 0)){ removeLocal(id); removed.push(id); } continue; }
+    if (local && (local.updatedAt || 0) > (data.updatedAt || 0)) continue;
+    if (local && remoteHash(data) === hashOf(local)){ syncMeta().h[id] = local.h = hashOf(local); continue; }
+    fromRemote(id, data, local); changed.push(id);
+  }
+  if (changed.length || removed.length){ saveLib(); refreshViews(changed, removed); }
+}
+function setSyncState(st, err){ SYNC.state = st; SYNC.err = err || ''; renderSide(); }
+async function loadCloud(){
+  if (window.__cloudStub) return window.__cloudStub;
+  const base = `https://www.gstatic.com/firebasejs/${FBV}/`;
+  const [A, Au, F] = await Promise.all([import(base+'firebase-app.js'), import(base+'firebase-auth.js'), import(base+'firebase-firestore.js')]);
+  const fbApp = A.initializeApp(FB_CONFIG), auth = Au.getAuth(fbApp);
+  let db; try { db = F.initializeFirestore(fbApp, {localCache: F.persistentLocalCache({tabManager: F.persistentMultipleTabManager()})}); } catch(e){ db = F.getFirestore(fbApp); }
+  return {
+    onUser: cb => Au.onAuthStateChanged(auth, u => cb(u ? {uid:u.uid, email:u.email, name:u.displayName} : null)),
+    signIn: async () => { const pr = new Au.GoogleAuthProvider();
+      try { await Au.signInWithPopup(auth, pr); }
+      catch(e){ if (['auth/popup-blocked','auth/operation-not-supported-in-environment'].includes(e.code)) return Au.signInWithRedirect(auth, pr); throw e; } },
+    signOut: () => Au.signOut(auth),
+    watch: (uid, onFirst, onChange, onErr) => { let first = true;
+      return F.onSnapshot(F.collection(db, 'users', uid, 'binders'), snap => {
+        if (first){ first = false; onFirst(snap.docs.map(d => ({id:d.id, data:d.data()}))); return; }
+        const ch = snap.docChanges().filter(c => !c.doc.metadata.hasPendingWrites && c.type !== 'removed').map(c => ({id:c.doc.id, data:c.doc.data()}));
+        if (ch.length) onChange(ch);
+      }, onErr); },
+    put: (uid, id, data) => F.setDoc(F.doc(db, 'users', uid, 'binders', id), data)
+  };
+}
+async function startSync(){
+  try { SYNC.cloud = await loadCloud(); } catch(e){ setSyncState('unavailable'); return; }
+  SYNC.cloud.onUser(u => {
+    if (SYNC.unsub){ SYNC.unsub(); SYNC.unsub = null; }
+    SYNC.user = u;
+    if (!u){ setSyncState('off'); return; }
+    setSyncState('syncing');
+    SYNC.unsub = SYNC.cloud.watch(u.uid, docs => {
+      const {changed, removed} = initialMerge(docs);
+      SYNC.state = 'ok'; flushLib(); refreshViews(changed, removed);
+    }, docs => { applyRemote(docs); if (SYNC.state !== 'error') setSyncState('ok'); },
+    e => setSyncState('error', e.code === 'permission-denied' ? 'accès refusé par la base (règles de sécurité)' : (e.message || String(e))));
+  });
+}
+const iconCloud = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 12.5h7.2a2.8 2.8 0 0 0 .3-5.6A4 4 0 0 0 4.3 6.2 3.2 3.2 0 0 0 4.5 12.5z"/></svg>';
+function syncButton(){
+  const st = SYNC.state, u = SYNC.user;
+  const label = st === 'loading' ? 'Synchro…' : st === 'unavailable' ? 'Synchro indisponible' : !u ? 'Synchroniser' :
+    st === 'syncing' ? 'Synchronisation…' : st === 'error' ? 'Erreur de synchro' : (u.email || 'Synchronisé');
+  const title = !u ? 'Connecte-toi avec Google pour retrouver tes classeurs sur tous tes appareils' :
+    st === 'error' ? 'Erreur : ' + SYNC.err : 'Synchronisé avec ' + (u.email || 'ton compte') + ' — clic pour gérer';
+  return `<button class="sbtn sync st-${u ? st : 'off'}" data-act="sync" title="${esc(title)}"><span class="ic">${iconCloud}<i class="dot"></i></span><span class="lbl">${esc(label)}</span></button>`;
+}
+function syncDialog(){
+  if (!SYNC.cloud){ toast("La synchronisation n'a pas pu se charger. Vérifie ta connexion et recharge la page."); return; }
+  if (!SYNC.user){
+    SYNC.cloud.signIn().catch(e => { if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') toast('Connexion impossible : ' + (e.code || e.message), 6000); });
+    return;
+  }
+  showModal(`<div class="modal"><h2>Synchronisation</h2>
+    <p class="help" style="margin:0 0 14px">Connecté avec <b>${esc(SYNC.user.email || '')}</b>. Tes classeurs (listes, tags, couvertures, cartes mises de côté) sont enregistrés en ligne et se retrouvent sur tous les appareils où tu te connectes avec ce compte. Les images et les prix sont rechargés depuis Scryfall sur chaque appareil.</p>
+    ${SYNC.state === 'error' ? `<p class="m-err">Dernière erreur : ${esc(SYNC.err)}</p>` : ''}
+    <div class="m-btns"><button class="ghost" data-act="sync-out">Se déconnecter</button><button class="primary" data-act="close-modal">OK</button></div></div>`);
+}
+
 /* ---------------- Démarrage ---------------- */
 function start(){
   shell();
@@ -1695,6 +1877,7 @@ function start(){
   loadRate();
   const h = location.hash.match(/^#b=(.+)$/);
   if (h){ shell(); renderSide(); openShared(h[1]); } else start();
+  startSync();
 })();
 })();
 </script>
